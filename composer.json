@@ -1,0 +1,19 @@
+{
+  "name": "bugbear/hayrick",
+  "license": "MIT",
+  "minimum-stability": "dev",
+  "autoload": {
+    "psr-4": {
+      "Hayrick\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Test\\": "test/"
+    }
+  },
+  "require": {
+    "php": ">=7.0.0",
+    "psr/http-message": "^1.0"
+  }
+}
