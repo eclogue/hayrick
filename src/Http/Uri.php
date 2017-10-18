@@ -7,7 +7,7 @@
  * @time: 下午9:12
  */
 
-namespace Courser\Http;
+namespace Hayrick\Http;
 
 use Psr\Http\Message\UriInterface;
 

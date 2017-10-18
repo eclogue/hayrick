@@ -5,12 +5,12 @@
  * Date: 2015/4/12
  * Time: 15:23
  */
-namespace Courser\Http;
+namespace Hayrick\Http;
 
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Courser\Environment\Incoming;
+use Hayrick\Environment\Request as Incoming;
 
 /*
  * Http request extend swoole_http_request

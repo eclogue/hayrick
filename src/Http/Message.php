@@ -7,7 +7,7 @@
  * @time: 下午8:42
  */
 
-namespace Courser\Http;
+namespace Hayrick\Http;
 
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\StreamInterface;

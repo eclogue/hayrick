@@ -8,7 +8,7 @@
  * refer http://github.com/zendframework/zend-diactoros
  */
 
-namespace Courser\Http;
+namespace Hayrick\Http;
 
 use InvalidArgumentException;
 use RuntimeException;

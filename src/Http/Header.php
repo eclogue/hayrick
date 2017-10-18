@@ -7,7 +7,7 @@
  * @time      : 下午8:02
  */
 
-namespace Courser\Http;
+namespace Hayrick\Http;
 
 
 class Header

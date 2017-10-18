@@ -1,11 +1,11 @@
 <?php
 
-namespace Courser\Http;
+namespace Hayrick\Http;
 
 use Psr\Http\Message\ResponseInterface;
 use RuntimeException;
 use InvalidArgumentException;
-use Courser\Environment\Output;
+use Hayrick\Environment\Output;
 
 class Response extends Message implements ResponseInterface
 {
