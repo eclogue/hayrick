@@ -10,7 +10,7 @@ namespace Hayrick\Environment;
 
 use InvalidArgumentException;
 
-class Request
+class Relay
 {
     public $server = [];
 

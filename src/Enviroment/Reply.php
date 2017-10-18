@@ -11,7 +11,7 @@ namespace Hayrick\Environment;
 
 use InvalidArgumentException;
 
-class Response
+class Reply
 {
 
     protected $content = [];

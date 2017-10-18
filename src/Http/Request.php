@@ -10,7 +10,7 @@ namespace Hayrick\Http;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Hayrick\Environment\Request as Incoming;
+use Hayrick\Environment\Relay;
 
 /*
  * Http request extend swoole_http_request
@@ -74,9 +74,9 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
      * @param object|null $req
      * @return void
      * */
-    public function createRequest($req = null)
+    public function createRequest(Relay $req = null)
     {
-        $incoming = new Incoming($req);
+        $incoming = new Relay($req);
         $this->incoming = $incoming;
 
         $clone = clone $this;
