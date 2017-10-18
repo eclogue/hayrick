@@ -93,20 +93,20 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         $clone->getRequestTarget();
         $clone->getParsedBody();
         $clone->query = $clone->uri->getQuery();
-        $clone->queryParams = $clone->parseQuery($clone->query);
+//        $clone->queryParams = $clone->parseQuery($clone->query);
+        $clone->parseQuery();
 
         return $clone;
     }
 
 
-    public function parseQuery(string $query)
+    public function parseQuery()
     {
-        if (!is_string($query)) {
-            return [];
+        if (is_string($this->query)) {
+            parse_str($this->query, $this->queryParams);
+        } else {
+            $this->queryParams = [];
         }
-        parse_str($query, $output);
-
-        return $output;
     }
 
 
@@ -448,7 +448,7 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
             !empty($this->uri->post) &&
             $this->getHeader('content-type') === 'application/x-www-form-urlencoded'
         ) {
-            $this->payload = $this->req->post;
+            $this->payload = $this->incoming->post;
         } else {
             if (empty($this->payload)) {
                 $this->payload = json_decode($this->incoming->getBody(), true);
