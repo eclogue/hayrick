@@ -1,5 +1,5 @@
 {
-  "name": "bugbear/hayrick",
+  "name": "eclogue/hayrick",
   "license": "MIT",
   "minimum-stability": "dev",
   "autoload": {
