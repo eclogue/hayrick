@@ -74,7 +74,7 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
      * @param object|null $req
      * @return void
      * */
-    public function createRequest(Relay $req = null)
+    public function createRequest($req = null)
     {
         $incoming = new Relay($req);
         $this->incoming = $incoming;
@@ -93,20 +93,21 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         $clone->getRequestTarget();
         $clone->getParsedBody();
         $clone->query = $clone->uri->getQuery();
-//        $clone->queryParams = $clone->parseQuery($clone->query);
-        $clone->parseQuery();
+        $clone->queryParams = $this->parseQuery($clone->query);
 
         return $clone;
     }
 
 
-    public function parseQuery()
+    public function parseQuery(string $query)
     {
-        if (is_string($this->query)) {
-            parse_str($this->query, $this->queryParams);
-        } else {
-            $this->queryParams = [];
+        if (is_string($query)) {
+            parse_str($query, $params);
+            var_dump('======', $params);
+            return $params;
         }
+
+        return [];
     }
 
 
@@ -291,7 +292,9 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         if (empty($target)) {
             $target = '/';
         }
+        
         $this->requestTarget = $target;
+
         return $this->requestTarget;
     }
 

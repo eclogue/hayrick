@@ -5,7 +5,7 @@ namespace Hayrick\Http;
 use Psr\Http\Message\ResponseInterface;
 use RuntimeException;
 use InvalidArgumentException;
-use Hayrick\Environment\Output;
+use Hayrick\Environment\Reply;
 
 class Response extends Message implements ResponseInterface
 {
@@ -44,7 +44,7 @@ class Response extends Message implements ResponseInterface
     public function __construct()
     {
         $this->headers = new Header();
-        $this->context = new Output();
+        $this->context = new Reply();
     }
 
 
@@ -58,7 +58,7 @@ class Response extends Message implements ResponseInterface
      * set content-type = json,and response json
      * @param array | iterator $data
      * */
-    public function json(array $data):Output
+    public function json(array $data):Reply
     {
         $this->withHeader('Content-Type', 'application/json');
         return $this->end($data);
@@ -70,7 +70,7 @@ class Response extends Message implements ResponseInterface
      *
      * @param mix $data
      * */
-    public function end($data = []):Output
+    public function end($data = []):Reply
     {
         if ($this->finish) {
             throw new RuntimeException('Request has been response, check your code for response');
@@ -90,9 +90,9 @@ class Response extends Message implements ResponseInterface
     }
 
     /**
-     * @return Output
+     * @return Reply
      */
-    public function getContext(): Output
+    public function getContext(): Reply
     {
         return $this->context;
     }
