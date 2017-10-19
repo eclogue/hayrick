@@ -76,7 +76,7 @@ class Response extends Message implements ResponseInterface
             throw new RuntimeException('Request has been response, check your code for response');
         }
         if (is_array($data)) {
-            $data = json_decode($data);
+            $data = json_encode($data);
         }
         $this->finish = true;
         $headers = $this->getHeaders();
