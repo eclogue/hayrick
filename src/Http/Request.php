@@ -103,7 +103,7 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
     {
         if (is_string($query)) {
             parse_str($query, $params);
-            var_dump('======', $params);
+
             return $params;
         }
 

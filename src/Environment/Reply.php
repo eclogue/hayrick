@@ -45,7 +45,7 @@ class Reply
      * @param array $data
      * @return array
      */
-    public function body(array $data): array
+    public function body(string $data): string
     {
         $this->content = $data;
 
@@ -85,6 +85,6 @@ class Reply
 
     public function getBody()
     {
-        return implode('', $this->content);
+       $this->content;
     }
 }

@@ -70,13 +70,13 @@ class Response extends Message implements ResponseInterface
      *
      * @param mix $data
      * */
-    public function end($data = []):Reply
+    public function end($data = ''):Reply
     {
         if ($this->finish) {
             throw new RuntimeException('Request has been response, check your code for response');
         }
-        if (!is_array($data)) {
-            $data = [$data];
+        if (is_array($data)) {
+            $data = json_decode($data);
         }
         $this->finish = true;
         $headers = $this->getHeaders();
