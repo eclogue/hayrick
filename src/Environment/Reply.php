@@ -85,6 +85,6 @@ class Reply
 
     public function getBody()
     {
-       $this->content;
+       return $this->content;
     }
 }
