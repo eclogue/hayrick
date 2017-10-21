@@ -44,7 +44,7 @@ class Uri implements UriInterface
     protected $query = '';
 
 
-    public function __construct($server)
+    public function __construct(array $server)
     {
         $server = array_change_key_case($server, CASE_LOWER);
         $this->ip = $server['remote_addr'] ?? '';
