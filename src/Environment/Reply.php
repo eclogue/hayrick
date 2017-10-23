@@ -87,4 +87,17 @@ class Reply
     {
         return $this->content;
     }
+
+    public function finish()
+    {
+        $this->finish = true;
+
+        return $this;
+    }
+
+    public function isFinish()
+    {
+        return $this->finish;
+    }
+
 }

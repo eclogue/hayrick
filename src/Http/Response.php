@@ -33,9 +33,6 @@ class Response extends Message implements ResponseInterface
      * */
     protected $body;
 
-
-    public $finish = false;
-
     protected $reasonPhrase;
 
     protected $context;
@@ -60,8 +57,8 @@ class Response extends Message implements ResponseInterface
      * */
     public function json(array $data):Reply
     {
-        $this->withHeader('Content-Type', 'application/json');
-        return $this->end($data);
+        $response = $this->withHeader('Content-Type', 'application/json');
+        return $response->end($data);
     }
 
     /*
@@ -72,21 +69,26 @@ class Response extends Message implements ResponseInterface
      * */
     public function end($data = []):Reply
     {
-        if ($this->finish) {
+        if ($this->context->isFinish()) {
             throw new RuntimeException('Request has been response, check your code for response');
         }
         if (is_array($data)) {
             $data = json_encode($data);
         }
-        $this->finish = true;
         $headers = $this->getHeaders();
         foreach ($headers as $key => $value) {
             $this->context->header($key, $value);
         }
         $this->context->status($this->statusCode);
         $this->context->body($data);
+        $this->context->finish();
 
         return $this->context;
+    }
+
+    public function isFinish()
+    {
+        return $this->context->isFinish();
     }
 
     /**
