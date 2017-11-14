@@ -144,16 +144,6 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         $this->params[$key] = $val;
     }
 
-    /*
-     * Get param by name
-     *
-     * @param string $name
-     * @return mix
-     * */
-    public function getParam($name, $default = null)
-    {
-        return isset($this->params[$name]) ? $this->params[$name] : $default;
-    }
 
     /**
      * Set header
@@ -166,9 +156,33 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         $this->header[$name] = $value;
     }
 
+    /*
+     * Get param by name
+     *
+     * @param string $name
+     * @return mix
+     * */
+    public function getParam($name, $default = null)
+    {
+        return isset($this->params[$name]) ? $this->params[$name] : $default;
+    }
+
+    /**
+     * get body param
+     *
+     * @param $key string
+     * @param null $default mixed
+     * @return mixed|null
+     */
+    public function getPayload(string $key, $default = null)
+    {
+        return $this->payload[$key] ?? $default;
+    }
+
 
     /*
-     * get cookie by key
+     * get cookie by key @todo
+     *
      * @param string $key
      * @return mixed
      * */
@@ -177,17 +191,6 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         if (isset($this->cookie[$key])) return $this->cookie[$key];
 
         return null;
-    }
-
-    /*
-     * get request body by param name
-     *
-     * @param string $key param name
-     * @return string || null
-     * */
-    public function parseBody()
-    {
-
     }
 
     /*
