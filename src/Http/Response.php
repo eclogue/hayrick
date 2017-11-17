@@ -1,196 +1,113 @@
 <?php
+/**
+ * @license MIT
+ * @copyright Copyright (c) 2017
+ * @author: bugbear
+ * @date: 2017/9/10
+ * @time: 下午1:20
+ */
 
-namespace Hayrick\Http;
+namespace Bulrush;
 
-use Psr\Http\Message\ResponseInterface;
+use Generator;
+use SplStack;
 use RuntimeException;
-use InvalidArgumentException;
-use Hayrick\Environment\Reply;
 
-class Response extends Message implements ResponseInterface
+class Poroutine
 {
 
-    protected $response;
+    private $coroutine;
 
-    /*
-     * @var array
-     * */
-    protected $headers;
+    private $exception = null;
 
-    /*
-     * @var integer
-     * */
-    protected $statusCode = 200;
+    private $value = null;
+
+    private $return = false;
 
 
-    /*
-     * store the \Swoole\Http\Response instance
-     * */
-    protected $res;
-
-    /*
-     * send body
-     * */
-    protected $body;
-
-    protected $reasonPhrase;
-
-    protected $context;
-
-
-    public function __construct()
+    public function __construct(Generator $co, bool $return)
     {
-        $this->headers = new Header();
-        $this->context = new Reply();
+        $this->coroutine = $this->stack($co);
+        $this->return = $return;
     }
 
 
-    public function __clone()
+    public function send($value)
     {
-        $this->headers = clone $this->headers;
+        $this->value = $value;
     }
 
-
-    /*
-     * set content-type = json,and response json
-     * @param array | iterator $data
-     * */
-    public function json(array $data):Reply
+    public function run()
     {
-        $response = $this->withHeader('Content-Type', 'application/json');
-        return $response->end($data);
-    }
+        if ($this->exception) {
+            $res = $this->coroutine->throw($this->exception);
+            $this->exception = null;
+            return $res;
+        }
+        $value = $this->coroutine->current();
+        $this->coroutine->next();
 
-    /*
-     * finish request
-     * Note: This method is not part of the PSR-7 standard.
-     *
-     * @param mix $data
-     * */
-    public function end($data = []):Reply
-    {
-        if ($this->context->isFinish()) {
-            throw new RuntimeException('Request has been response, check your code for response');
-        }
-        if (is_array($data)) {
-            $data = json_encode($data);
-        }
-        $headers = $this->getHeaders();
-        foreach ($headers as $key => $value) {
-            $this->context->header($key, $value);
-        }
-        $this->context->status($this->statusCode);
-        $this->context->body($data);
-        $this->context->finish();
-
-        return $this->context;
+        return $value;
     }
 
     public function isFinish()
     {
-        return $this->context->isFinish();
+        return !$this->coroutine->valid();
     }
 
-    /**
-     * @return Reply
-     */
-    public function getContext(): Reply
+    public function reject($message)
     {
-        return $this->context;
+        $this->exception = $message;
     }
 
-
-    // ===================== PSR-7 standard ===================== //
-
-    public function withStatus($code, $reasonPhrase = '')
+    public function stack(Generator $gen)
     {
-        if (!is_string($reasonPhrase) && !method_exists($reasonPhrase, '__toString')) {
-            throw new InvalidArgumentException('ReasonPhrase must be a string');
+        $coStack = new SplStack;
+        $value = null;
+        for(;;) {
+            try {
+                if ($this->exception) {
+                    $gen->throw($this->exception);
+                    $this->exception = null;
+                    continue;
+                }
+
+                if ($gen->valid()) {
+                    $value = $gen->current();
+                }
+                if ($value instanceof Generator) {
+                    $coStack->push($gen); // 保存当前的 generator
+                    $gen = $value;
+                    continue;
+                }
+
+                if (!$gen->valid()) {
+                    if ($coStack->isEmpty()) {
+                        return $value;
+                    }
+
+                    if ($this->return) {
+                        $value = $gen->getReturn();
+                    }
+                    $gen = $coStack->pop();
+                    $gen->send($value);
+                    yield $value;
+                    continue;
+                }
+
+                $gen->send($value);
+                yield $value;
+
+            } catch (RuntimeException $e) {
+                if ($coStack->isEmpty()) {
+                    throw $e;
+                }
+
+                $gen = $coStack->pop();
+                $this->exception = $e;
+            }
         }
-        $clone = clone $this;
-        $clone->statusCode = $code;
-        if ($reasonPhrase === '' && isset(Header::$messages[$code])) {
-            $reasonPhrase = Header::$messages[$code];
-        }
-        $clone->reasonPhrase = $reasonPhrase;
 
-        return $clone;
+        return $value;
     }
-
-    /*
-     * set response header
-     * @param string $field
-     * @param mixed $value
-     * @return void
-     * */
-    public function withHeader($field, $value)
-    {
-        $this->headers->setHeader($field, $value);
-        $clone = clone $this;
-
-        return $clone;
-    }
-
-    /*
-     * get all response headers
-     * */
-    public function getHeaders()
-    {
-        return $this->headers->getHeaders();
-    }
-
-
-    /*
-     * get header by key
-     * */
-    public function getHeader($key, $default = null)
-    {
-        return isset($this->headers[$key]) ? $this->headers[$key] : $default;
-    }
-
-
-    public function __toString()
-    {
-        return (string)$this->context;
-    }
-
-    /**
-     * Gets the response status code.
-     *
-     * The status code is a 3-digit integer result code of the server's attempt
-     * to understand and satisfy the request.
-     *
-     * @return int Status code.
-     */
-    public function getStatusCode()
-    {
-        return $this->statusCode;
-    }
-
-
-    /**
-     * Gets the response reason phrase associated with the status code.
-     *
-     * Because a reason phrase is not a required element in a response
-     * status line, the reason phrase value MAY be null. Implementations MAY
-     * choose to return the default RFC 7231 recommended reason phrase (or those
-     * listed in the IANA HTTP Status Code Registry) for the response's
-     * status code.
-     *
-     * @link http://tools.ietf.org/html/rfc7231#section-6
-     * @link http://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
-     * @return string Reason phrase; must return an empty string if none present.
-     */
-    public function getReasonPhrase()
-    {
-
-        if ($this->reasonPhrase) {
-            return $this->reasonPhrase;
-        }
-        if (isset(Header::$messages[$this->statusCode])) {
-            return Header::$messages[$this->statusCode];
-        }
-        return '';
-    }
-
 }
