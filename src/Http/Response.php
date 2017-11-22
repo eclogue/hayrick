@@ -51,6 +51,21 @@ class Response extends Message implements ResponseInterface
         $this->headers = clone $this->headers;
     }
 
+    public function prepare(Request $request)
+    {
+
+    }
+
+    public function write($data)
+    {
+        if (is_object($data) || is_array($data))
+        {
+            $this->content = json_encode($data);
+        } else {
+            $this->content = $data;
+        }
+    }
+
 
     /*
      * set content-type = json,and response json
