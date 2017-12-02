@@ -9,6 +9,7 @@
 namespace Hayrick\Environment;
 
 use InvalidArgumentException;
+use Hayrick\Http\Stream;
 
 class Relay
 {
@@ -20,43 +21,61 @@ class Relay
 
     public $headers = [];
 
-    public $request;
-
-    public $body = [];
-
     public $query = [];
 
-    public function __construct($request = null)
+    public $request;
+
+    public $body;
+
+
+
+    public static function createFromSwoole($request): Relay
     {
-        if (!$request) {
-            $this->server = array_change_key_case($_SERVER, CASE_LOWER);
-            $this->cookie = array_change_key_case($_COOKIE, CASE_LOWER);
-            $this->files = array_change_key_case($_FILES, CASE_LOWER);
-            $this->query = $_GET;
-            if (!function_exists('getallheaders'))
-            {
-                $headers = [];
-                foreach ($_SERVER as $name => $value) {
-                    if (substr($name, 0, 5) == 'HTTP_') {
-                        $key = strtolower(str_replace('_', ' ', substr($name, 5)));
-                        $key = str_replace(' ', '-', $key);
-                        $headers[$key] = $value;
-                    }
-                }
-                $this->headers = $headers;
-            } else {
-                $this->headers = getallheaders();
-            }
-        } else {
-            $this->server = $request->server;
-            $this->cookie = $request->cookie;
-            $this->files = $request->files;
-            $this->body = $request->rawContent();
-            $this->query = $request->get;
+        $relay = new self();
+        $relay->server = $request->server;
+        $relay->cookie = $request->cookie;
+        $relay->files = $request->files;
+        $relay->query = $request->get;
+        $relay->headers = $request->header;
+        $stream = fopen('php://temp', 'w+');
+        $source = $request->rawContent();
+        if ($source) {
+            fwrite($stream, $source);
         }
 
-        $this->request = $request;
+        $relay->body = new Stream($stream);
+
+        return $relay;
     }
+
+    public static function createFromCGI(): Relay
+    {
+        $relay = new self();
+        $relay->server = array_change_key_case($_SERVER, CASE_LOWER);
+        $relay->cookie = array_change_key_case($_COOKIE, CASE_LOWER);
+        $relay->files = array_change_key_case($_FILES, CASE_LOWER);
+        $relay->query = $_GET;
+        if (!function_exists('getallheaders')) {
+            $headers = [];
+            foreach ($_SERVER as $name => $value) {
+                if (substr($name, 0, 5) == 'HTTP_') {
+                    $key = strtolower(str_replace('_', ' ', substr($name, 5)));
+                    $key = str_replace(' ', '-', $key);
+                    $headers[$key] = $value;
+                }
+            }
+
+            $relay->headers = $headers;
+        }
+
+        $stream = fopen('php://temp', 'w+');
+        stream_copy_to_stream(fopen('php://input', 'r'), $stream);
+        rewind($stream);
+        $relay->body = new Stream($stream);
+
+        return $relay;
+    }
+
 
     /**
      * @param $name
@@ -84,15 +103,25 @@ class Relay
         if (property_exists($this->request, $name)) {
             return $this->request->$name;
         } else {
-            $message = 'Try to get Illegal property `%s` of %s';
+            $message = 'Try to get illegal property `%s` of %s';
             $message = sprintf($message, $name, get_class($this->request));
             throw new InvalidArgumentException($message);
         }
     }
 
-    public function getBody()
+    /**
+     * @param null $parser body parser
+     * @return mixed
+     */
+    public function getBody($parser = null)
     {
-        return $this->body;
+        if (is_array($parser)) {
+            return call_user_func_array($parser, [$this->body]);
+        } elseif (is_callable($parser)) {
+            return $parser($this->body);
+        } else {
+            return $this->body;
+        }
     }
 
 }

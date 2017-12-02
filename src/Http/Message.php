@@ -19,7 +19,7 @@ class Message implements MessageInterface
 
     protected $headers = [];
 
-    protected $body = [];
+    protected $body;
 
     protected $stream;
 
@@ -134,6 +134,7 @@ class Message implements MessageInterface
     public function withHeader($name, $value)
     {
         $this->headers[$name] = $value;
+
         return $this;
     }
 
@@ -152,6 +153,7 @@ class Message implements MessageInterface
         $value = is_array($value) ? $value : [$value];
         $value = array_merge($origin, $value);
         $this->withHeader($name, $value);
+
         return $this;
     }
 
@@ -172,6 +174,7 @@ class Message implements MessageInterface
         if (isset($this->headers[$name])) {
             unset($this->headers[$name]);
         }
+
         return $this;
     }
 
@@ -194,9 +197,10 @@ class Message implements MessageInterface
      * @return static
      * @throws \InvalidArgumentException When the body is not valid.
      */
-    public function withBody(StreamInterface $body)
+    public function withBody(StreamInterface $body): Message
     {
-        $this->stream = $body;
+        $this->body = $body;
+
         return $this;
     }
 

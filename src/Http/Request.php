@@ -68,6 +68,8 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
 
     protected $incoming;
 
+    protected $bodyParser = [];
+
 
     /*
      * set request context @todo
@@ -76,7 +78,7 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
      * */
     public function createRequest($req = null)
     {
-        $incoming = new Relay($req);
+        $incoming = Relay::createFromSwoole($req);
         $this->incoming = $incoming;
 
         $clone = clone $this;
@@ -88,12 +90,22 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         if (!isset($clone->server['http_host']) && $clone->hasHeader('http_host')) {
             $clone->server['http_host'] = $clone->getHeader('https_host');
         }
-        $clone->uri = new Uri($clone->server);
+
+        $clone = $clone->withBody($incoming->body);
+
+        $clone = $clone->withUri(new Uri($clone->server));
         $clone->files = isset($incoming->files) ? $incoming->files : []; // @todo
-        $clone->getRequestTarget();
-        $clone->getParsedBody();
         $clone->query = $clone->uri->getQuery();
         $clone->queryParams = $this->parseQuery($clone->query);
+        $clone->getRequestTarget();
+        $clone->bodyParser['application/json'] = function ($body) {
+            return json_decode($body, true);
+        };
+
+        $clone->bodyParser['application/x-www-form-urlencoded'] = function ($input) {
+            parse_str($input, $data);
+            return $data;
+        };
 
         return $clone;
     }
@@ -110,6 +122,11 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         return [];
     }
 
+    public function bodyParser($parser)
+    {
+
+    }
+
 
     /*
      * get all params
@@ -121,16 +138,6 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         return $this->params;
     }
 
-    /*
-     * add param name
-     *
-     * @param string $name
-     * @return void
-     * */
-    public function addParamName($name)
-    {
-        $this->paramNames[] = $name;
-    }
 
     /*
      * set param
@@ -153,7 +160,7 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
      */
     public function setHeader($name, $value)
     {
-        $this->header[$name] = $value;
+        $this->headers[$name] = $value;
     }
 
     /*
@@ -213,42 +220,42 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         return clone $this;
     }
 
-    /**
-     * @param $name
-     * @return mixed|null
-     */
-    public function __get($name)
-    {
-        if (isset($this->incoming->$name)) {
-            return $this->incoming->$name;
-        }
-
-        return null;
-    }
-
-    /**
-     * @param $name
-     * @param $value
-     * @return mixed
-     */
-    public function __set($name, $value)
-    {
-        return $this->incoming->$name = $value;
-    }
-
-    /**
-     * @param $func
-     * @param $params
-     * @return bool|mixed
-     */
-    public function __call($func, $params)
-    {
-        if (is_callable([$this->incoming, $func])) {
-            return call_user_func_array([$this->incoming, $func], $params);
-        }
-
-        return false;
-    }
+//    /**
+//     * @param $name
+//     * @return mixed|null
+//     */
+//    public function __get($name)
+//    {
+//        if (isset($this->incoming->$name)) {
+//            return $this->incoming->$name;
+//        }
+//
+//        return null;
+//    }
+//
+//    /**
+//     * @param $name
+//     * @param $value
+//     * @return mixed
+//     */
+//    public function __set($name, $value)
+//    {
+//        return $this->incoming->$name = $value;
+//    }
+//
+//    /**
+//     * @param $func
+//     * @param $params
+//     * @return bool|mixed
+//     */
+//    public function __call($func, $params)
+//    {
+//        if (is_callable([$this->incoming, $func])) {
+//            return call_user_func_array([$this->incoming, $func], $params);
+//        }
+//
+//        return false;
+//    }
 
     // ===================== PSR-7 standard =====================
 
@@ -295,7 +302,7 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         if (empty($target)) {
             $target = '/';
         }
-        
+
         $this->requestTarget = $target;
 
         return $this->requestTarget;
@@ -316,15 +323,18 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
     public function withUri(UriInterface $uri, $preserveHost = false)
     {
         $clone = clone $this;
+        $clone->uri = $uri;
         if (!$preserveHost) {
             if ($uri->getHost() !== '') {
-                $clone->headers->set('Host', $uri->getHost());
+                $clone->setHeader('Host', $uri->getHost());
             }
         } else {
             if ($uri->getHost() !== '' && (!$this->hasHeader('Host') || $this->getHeaderLine('Host') === '')) {
                 $clone->setHeader('Host', $uri->getHost());
             }
         }
+
+        return $clone;
 
     }
 
@@ -369,6 +379,7 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
     {
         $clone = clone $this;
         $clone->cookie = array_merge($clone->cookie, $cookies);
+
         return $clone;
     }
 
@@ -450,15 +461,17 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
      */
     public function getParsedBody()
     {
-        if (
-            !empty($this->uri->post) &&
-            $this->getHeader('content-type') === 'application/x-www-form-urlencoded'
-        ) {
-            $this->payload = $this->incoming->post;
+        if ($this->payload) {
+            return $this->payload;
+        }
+
+        $type = strtolower($this->getHeader('content-type'));
+        $body = (string) $this->getBody();
+        if (isset($this->bodyParser[$type])) {
+            $parser = $this->bodyParser[$type];
+            $this->payload = $parser($body);
         } else {
-            if (empty($this->payload)) {
-                $this->payload = json_decode($this->incoming->getBody(), true);
-            }
+            throw new \RuntimeException('Parser of content-type:' . $type . ' not found.');
         }
 
         return $this->payload;
