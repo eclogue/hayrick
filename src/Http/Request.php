@@ -76,12 +76,11 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
      * @param object|null $req
      * @return void
      * */
-    public function createRequest($req = null)
+    public static function createRequest($req = null)
     {
         $incoming = Relay::createFromSwoole($req);
-        $this->incoming = $incoming;
-
-        $clone = clone $this;
+        $clone = new static();
+        $clone->incoming = $incoming;
         $clone->server = $incoming->server;
         $method = $clone->server['request_method'] ?? 'get';
         $clone = $clone->withMethod($method);
@@ -96,7 +95,7 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         $clone = $clone->withUri(new Uri($clone->server));
         $clone->files = isset($incoming->files) ? $incoming->files : []; // @todo
         $clone->query = $clone->uri->getQuery();
-        $clone->queryParams = $this->parseQuery($clone->query);
+        $clone->queryParams = $clone->parseQuery($clone->query);
         $clone->getRequestTarget();
         $clone->bodyParser['application/json'] = function ($body) {
             return json_decode($body, true);
@@ -220,42 +219,42 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         return clone $this;
     }
 
-//    /**
-//     * @param $name
-//     * @return mixed|null
-//     */
-//    public function __get($name)
-//    {
-//        if (isset($this->incoming->$name)) {
-//            return $this->incoming->$name;
-//        }
-//
-//        return null;
-//    }
-//
-//    /**
-//     * @param $name
-//     * @param $value
-//     * @return mixed
-//     */
-//    public function __set($name, $value)
-//    {
-//        return $this->incoming->$name = $value;
-//    }
-//
-//    /**
-//     * @param $func
-//     * @param $params
-//     * @return bool|mixed
-//     */
-//    public function __call($func, $params)
-//    {
-//        if (is_callable([$this->incoming, $func])) {
-//            return call_user_func_array([$this->incoming, $func], $params);
-//        }
-//
-//        return false;
-//    }
+    /**
+     * @param $name
+     * @return mixed|null
+     */
+    public function __get($name)
+    {
+        if (isset($this->incoming->$name)) {
+            return $this->incoming->$name;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param $name
+     * @param $value
+     * @return mixed
+     */
+    public function __set($name, $value)
+    {
+        return $this->incoming->$name = $value;
+    }
+
+    /**
+     * @param $func
+     * @param $params
+     * @return bool|mixed
+     */
+    public function __call($func, $params)
+    {
+        if (is_callable([$this->incoming, $func])) {
+            return call_user_func_array([$this->incoming, $func], $params);
+        }
+
+        return false;
+    }
 
     // ===================== PSR-7 standard =====================
 
@@ -310,6 +309,7 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
 
     /**
      * @param string $method
+     * @return static
      */
     public function withMethod($method)
     {
@@ -320,6 +320,11 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
     }
 
 
+    /**
+     * @param UriInterface $uri
+     * @param bool $preserveHost
+     * @return Request
+     */
     public function withUri(UriInterface $uri, $preserveHost = false)
     {
         $clone = clone $this;
@@ -369,11 +374,11 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         return $this->cookie;
     }
 
+
+
     /**
-     * Return an instance with the specified cookies.
-     *
-     * @param array $cookies Array of key/value pairs representing cookies.
-     * @return static
+     * @param array $cookies
+     * @return Request
      */
     public function withCookieParams(array $cookies)
     {
@@ -441,6 +446,7 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
     {
         $clone = clone $this;
         $clone->files = array_merge($clone->files, $uploadedFiles);
+
         return $clone;
     }
 
@@ -467,11 +473,15 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
 
         $type = strtolower($this->getHeader('content-type'));
         $body = (string) $this->getBody();
-        if (isset($this->bodyParser[$type])) {
+        $methods = [
+            'put',
+            'post',
+            'delete',
+        ];
+        $method = strtolower($this->method);
+        if (isset($this->bodyParser[$type]) && in_array($method, $methods)) {
             $parser = $this->bodyParser[$type];
             $this->payload = $parser($body);
-        } else {
-            throw new \RuntimeException('Parser of content-type:' . $type . ' not found.');
         }
 
         return $this->payload;
@@ -534,8 +544,10 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
      */
     public function withAttribute($name, $value)
     {
-        $this->attributes[$name] = $value;
-        return $this;
+        $clone = clone $this;
+        $clone->attributes[$name] = $value;
+
+        return $clone;
     }
 
     /**

@@ -5,7 +5,6 @@ namespace Hayrick\Http;
 use Psr\Http\Message\ResponseInterface;
 use RuntimeException;
 use InvalidArgumentException;
-use Hayrick\Environment\Reply;
 
 class Response extends Message implements ResponseInterface
 {
@@ -22,14 +21,8 @@ class Response extends Message implements ResponseInterface
      * */
     protected $statusCode = 200;
 
-
     /*
-     * store the \Swoole\Http\Response instance
-     * */
-    protected $res;
-
-    /*
-     * send body
+     * @var body
      * */
     protected $body;
 
@@ -38,11 +31,10 @@ class Response extends Message implements ResponseInterface
     protected $content;
 
 
-
     public function __construct()
     {
         $this->headers = new Header();
-        $this->context = '';
+        $this->body = new Stream(fopen('php://temp', 'r+'));
     }
 
 
@@ -58,23 +50,24 @@ class Response extends Message implements ResponseInterface
 
     public function write($data)
     {
-        if (is_object($data) || is_array($data))
-        {
-            $this->content = json_encode($data);
-        } else {
-            $this->content = $data;
-        }
+        $this->getBody()->write($data);
+
+        return $this;
     }
 
 
-    /*
+    /**
      * set content-type = json,and response json
-     * @param array | iterator $data
-     * */
+     * @param array $data
+     * @return ResponseInterface|static
+     */
     public function json(array $data)
     {
+        $data = json_encode($data);
         $response = $this->withHeader('Content-Type', 'application/json');
-        return $response->end($data);
+        $response->getBody()->write($data);
+
+        return $response;
     }
 
     /*
@@ -84,23 +77,23 @@ class Response extends Message implements ResponseInterface
      * @param mix $data
      * @return object
      * */
-    public function end($data = [])
+    public function send($data = [])
     {
         if (is_array($data)) {
             $data = json_encode($data);
         }
 
-        $this->content = $data;
+        $this->getBody()->write($data);
 
         return $this;
     }
 
     /**
-     * @return Reply
+     * @return string
      */
     public function getContent()
     {
-        return $this->content;
+        return (string) $this->getBody();
     }
 
 
@@ -111,26 +104,30 @@ class Response extends Message implements ResponseInterface
         if (!is_string($reasonPhrase) && !method_exists($reasonPhrase, '__toString')) {
             throw new InvalidArgumentException('ReasonPhrase must be a string');
         }
+
         $clone = clone $this;
         $clone->statusCode = $code;
         if ($reasonPhrase === '' && isset(Header::$messages[$code])) {
             $reasonPhrase = Header::$messages[$code];
         }
+
         $clone->reasonPhrase = $reasonPhrase;
 
         return $clone;
     }
 
-    /*
+
+    /**
      * set response header
+     *
      * @param string $field
-     * @param mixed $value
-     * @return void
-     * */
+     * @param string $value
+     * @return Response
+     */
     public function withHeader($field, $value)
     {
-        $this->headers->setHeader($field, $value);
         $clone = clone $this;
+        $clone->headers->setHeader($field, $value);
 
         return $clone;
     }

@@ -182,7 +182,7 @@ class Message implements MessageInterface
      * Gets the body of the message.
      * Note: This method is not flow the PSR-7 standard.
      *
-     * @return array
+     * @return StreamInterface
      */
     public function getBody()
     {
