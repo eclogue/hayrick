@@ -82,11 +82,13 @@ class Header
 
     public $statusCode = 200;
 
+    public $protocolVersion = '1.1';
+
     public $headers = [];
 
-    public function __construct($status = 200)
+    public function __construct($code = 200)
     {
-        $this->statusCode = $status;
+        $this->statusCode = $code;
     }
 
 
@@ -102,9 +104,19 @@ class Header
         ];
     }
 
+    public function setStatus($code)
+    {
+        $this->statusCode = $code;
+    }
+
     public function setHeader($name, $value)
     {
         $this->headers[$name] = $value;
+    }
+
+    public function getStatusCode()
+    {
+        return $this->statusCode;
     }
 
     public function getHeader($name)
@@ -117,4 +129,13 @@ class Header
         return $this->headers;
     }
 
+    public function getProtocol()
+    {
+        return 'HTTP/' . $this->protocolVersion;
+    }
+
+    public function getMessage()
+    {
+        return static::$messages[$this->statusCode] ?? '';
+    }
 }

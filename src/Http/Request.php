@@ -121,9 +121,13 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         return [];
     }
 
-    public function bodyParser($parser)
+    /**
+     * @param string $type
+     * @param callable $parser
+     */
+    public function bodyParser(string $type, callable $parser)
     {
-
+        $this->bodyParser[strtolower($type)] = $parser;
     }
 
 

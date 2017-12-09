@@ -10,20 +10,26 @@
 namespace Hayrick\Environment;
 
 use InvalidArgumentException;
+use Hayrick\Http\Header;
+use Psr\Http\Message\ResponseInterface;
 
 class Reply
 {
 
     protected $content = [];
 
-    protected $header = [];
+    protected $headers = [];
 
     protected $file = '';
 
     protected $finish = false;
 
-    protected $status = 200;
+    protected $statusCode = 200;
 
+    public function __construct()
+    {
+        $this->header = new Header();
+    }
 
     /**
      * set response header
@@ -34,9 +40,9 @@ class Reply
      */
     public function header(string $key, string $value): array
     {
-        $this->header[$key] = $value;
+        $this->header->setHeader($key, $value);
 
-        return $this->header;
+        return $this->header->getHeaders();
     }
 
     /**
@@ -65,39 +71,72 @@ class Reply
         return $this->file;
     }
 
-    public function status(int $status = 200): int
+    public function status(int $status = 200)
     {
-        $this->status = $status;
-
-        return $this->status;
-    }
-
-
-    public function __toString()
-    {
-        return '';
-    }
-
-    public function getHeaders()
-    {
-        return $this->header;
-    }
-
-    public function getBody()
-    {
-        return $this->content;
-    }
-
-    public function finish()
-    {
-        $this->finish = true;
+        $this->header->setStatus($status);
 
         return $this;
     }
 
-    public function isFinish()
+    public function getHeaders()
     {
-        return $this->finish;
+        return $this->header->getHeaders();
+    }
+
+
+    public function send(ResponseInterface $response)
+    {
+        if (!headers_sent()) {
+            // Status
+            header(sprintf(
+                'HTTP/%s %s %s',
+                $this->header->getProtocol(),
+                $this->header->getStatusCode(),
+                $this->header->getMessage()
+            ));
+
+            // Headers
+            foreach ($this->getHeaders() as $name => $values) {
+                foreach ($values as $value) {
+                    header(sprintf('%s: %s', $name, $value), false);
+                }
+            }
+        }
+
+        // Body
+        if (!$response->getBody()) {
+            $body = $response->getBody();
+            if ($body->isSeekable()) {
+                $body->rewind();
+            }
+
+            $chunkSize = 4096; // @todo
+            $contentLength  = $response->getHeaderLine('Content-Length');
+            if (!$contentLength) {
+                $contentLength = $body->getSize();
+            }
+
+            if (isset($contentLength)) {
+                $amountToRead = $contentLength;
+                while ($amountToRead > 0 && !$body->eof()) {
+                    $data = $body->read(min($chunkSize, $amountToRead));
+                    echo $data;
+
+                    $amountToRead -= strlen($data);
+
+                    if (connection_status() != CONNECTION_NORMAL) {
+                        break;
+                    }
+                }
+            } else {
+                while (!$body->eof()) {
+                    echo $body->read($chunkSize);
+                    if (connection_status() != CONNECTION_NORMAL) {
+                        break;
+                    }
+                }
+            }
+        }
     }
 
 }
