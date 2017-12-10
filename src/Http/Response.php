@@ -14,7 +14,7 @@ class Response extends Message implements ResponseInterface
     /*
      * @var array
      * */
-    protected $headers;
+    protected $header;
 
     /*
      * @var integer
@@ -33,14 +33,14 @@ class Response extends Message implements ResponseInterface
 
     public function __construct()
     {
-        $this->headers = new Header();
+        $this->header = new Header();
         $this->body = new Stream(fopen('php://temp', 'r+'));
     }
 
 
     public function __clone()
     {
-        $this->headers = clone $this->headers;
+        $this->header = clone $this->header;
     }
 
     public function prepare(Request $request)
@@ -127,7 +127,7 @@ class Response extends Message implements ResponseInterface
     public function withHeader($field, $value)
     {
         $clone = clone $this;
-        $clone->headers->setHeader($field, $value);
+        $clone->header->setHeader($field, $value);
 
         return $clone;
     }
@@ -137,17 +137,9 @@ class Response extends Message implements ResponseInterface
      * */
     public function getHeaders()
     {
-        return $this->headers->getHeaders();
+        return $this->header->getHeaders();
     }
 
-
-    /*
-     * get header by key
-     * */
-    public function getHeader($key, $default = null)
-    {
-        return isset($this->headers[$key]) ? $this->headers[$key] : $default;
-    }
 
 
     public function __toString()

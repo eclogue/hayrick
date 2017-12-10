@@ -31,7 +31,8 @@ class Reply
             }
         }
 
-        if (!$response->getBody()) {
+//        var_dump($response->getBody());
+        if (!in_array($response->getStatusCode(), [204, 205, 304])) {
             $body = $response->getBody();
             if ($body->isSeekable()) {
                 $body->rewind();

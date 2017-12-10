@@ -66,48 +66,10 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
 
     protected $attributes = [];
 
-    protected $incoming;
+    public $incoming;
 
     protected $bodyParser = [];
 
-
-    /*
-     * set request context @todo
-     * @param object|null $req
-     * @return void
-     * */
-    public static function createRequest($req = null)
-    {
-        $incoming = Relay::createFromSwoole($req);
-        $clone = new static();
-        $clone->incoming = $incoming;
-        $clone->server = $incoming->server;
-        $method = $clone->server['request_method'] ?? 'get';
-        $clone = $clone->withMethod($method);
-        $clone->headers = $incoming->headers ?? [];
-        $clone->cookie = $incoming->cookie ?? []; // @todo psr-7 standard
-        if (!isset($clone->server['http_host']) && $clone->hasHeader('http_host')) {
-            $clone->server['http_host'] = $clone->getHeader('https_host');
-        }
-
-        $clone = $clone->withBody($incoming->body);
-
-        $clone = $clone->withUri(new Uri($clone->server));
-        $clone->files = isset($incoming->files) ? $incoming->files : []; // @todo
-        $clone->query = $clone->uri->getQuery();
-        $clone->queryParams = $clone->parseQuery($clone->query);
-        $clone->getRequestTarget();
-        $clone->bodyParser['application/json'] = function ($body) {
-            return json_decode($body, true);
-        };
-
-        $clone->bodyParser['application/x-www-form-urlencoded'] = function ($input) {
-            parse_str($input, $data);
-            return $data;
-        };
-
-        return $clone;
-    }
 
 
     public function parseQuery(string $query)

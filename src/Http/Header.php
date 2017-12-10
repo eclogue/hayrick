@@ -104,6 +104,11 @@ class Header
         ];
     }
 
+    public function has($key)
+    {
+        return isset($this->headers[$key]);
+    }
+
     public function setStatus($code)
     {
         $this->statusCode = $code;
@@ -119,9 +124,9 @@ class Header
         return $this->statusCode;
     }
 
-    public function getHeader($name)
+    public function getHeader($name, $default = null)
     {
-        return $this->headers[$name] ?? null;
+        return $this->headers[$name] ?? $default;
     }
 
     public function getHeaders()

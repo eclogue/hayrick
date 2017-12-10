@@ -43,6 +43,10 @@ class Relay
             fwrite($stream, $source);
         }
 
+        if (!isset($relay->server['http_host']) && isset($relay->header['http_host'])) {
+            $relay->server['http_host'] = $relay->header['https_host'];
+        }
+
         $relay->body = new Stream($stream);
 
         return $relay;
@@ -66,6 +70,10 @@ class Relay
             }
 
             $relay->headers = $headers;
+        }
+
+        if (!isset($relay->server['http_host']) && isset($relay->header['http_host'])) {
+            $relay->server['http_host'] = $relay->header['https_host'];
         }
 
         $stream = fopen('php://temp', 'w+');

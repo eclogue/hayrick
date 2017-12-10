@@ -17,7 +17,7 @@ class Message implements MessageInterface
 {
     protected $protocolVersion = '1.1';
 
-    protected $headers = [];
+    protected $header;
 
     protected $body;
 
@@ -67,7 +67,7 @@ class Message implements MessageInterface
      */
     public function getHeaders()
     {
-        return $this->headers;
+        return $this->header->getHeaders();
     }
 
     /**
@@ -80,7 +80,7 @@ class Message implements MessageInterface
      */
     public function hasHeader($name)
     {
-        return isset($this->headers[$name]);
+        return $this->header->has($name);
     }
 
     /**
@@ -99,7 +99,7 @@ class Message implements MessageInterface
      */
     public function getHeader($name, $default = null)
     {
-        return $this->headers[$name] ?? $default;
+        return $this->header->getHeader($name, $default);
     }
 
     /**
@@ -110,9 +110,9 @@ class Message implements MessageInterface
      *    concatenated together using a comma. If the header does not appear in
      *    the message, this method MUST return an empty string.
      */
-    public function getHeaderLine($name)
+    public function getHeaderLine($name, $default = [])
     {
-        $header = $this->getHeader($name, []);
+        $header = $this->getHeader($name, $default);
         return implode(',', $header);
     }
 
@@ -133,9 +133,10 @@ class Message implements MessageInterface
      */
     public function withHeader($name, $value)
     {
-        $this->headers[$name] = $value;
+        $clone = clone $this;
+        $clone->headers[$name] = $value;
 
-        return $this;
+        return $clone;
     }
 
     /**
