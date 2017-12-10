@@ -14,7 +14,7 @@ use Psr\Http\Message\ResponseInterface;
 class Reply
 {
 
-    public function send(ResponseInterface $response)
+    public function __invoke(ResponseInterface $response)
     {
         if (!headers_sent()) {
             header(sprintf(
