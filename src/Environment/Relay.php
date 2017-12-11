@@ -32,19 +32,19 @@ class Relay
     public static function createFromSwoole($request): Relay
     {
         $relay = new self();
-        $relay->server = $request->server;
-        $relay->cookie = $request->cookie;
-        $relay->files = $request->files;
-        $relay->query = $request->get;
-        $relay->headers = $request->header;
+        $relay->server = $request->server ?? [];
+        $relay->cookie = $request->cookie ?? [];
+        $relay->files = $request->files ?? [];
+        $relay->query = $request->get ?? [];
+        $relay->headers = $request->header ?? [];
         $stream = fopen('php://temp', 'w+');
         $source = $request->rawContent();
         if ($source) {
             fwrite($stream, $source);
         }
 
-        if (!isset($relay->server['http_host']) && isset($relay->header['http_host'])) {
-            $relay->server['http_host'] = $relay->header['https_host'];
+        if (!isset($relay->server['http_host']) && isset($relay->headers['http_host'])) {
+            $relay->server['http_host'] = $relay->headers['https_host'];
         }
 
         $relay->body = new Stream($stream);

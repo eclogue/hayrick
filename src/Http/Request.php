@@ -71,6 +71,10 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
     protected $bodyParser = [];
 
 
+    public function __construct()
+    {
+        $this->header = new Header();
+    }
 
     public function parseQuery(string $query)
     {
@@ -125,7 +129,7 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
      */
     public function setHeader($name, $value)
     {
-        $this->headers[$name] = $value;
+        $this->header->setHeader($name, $value);
     }
 
     /*
@@ -306,7 +310,6 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         }
 
         return $clone;
-
     }
 
     //======================= ServerRequestInterface =======================//
