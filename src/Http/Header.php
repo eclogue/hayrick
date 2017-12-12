@@ -104,11 +104,32 @@ class Header
         ];
     }
 
+    /**
+     * init headers
+     *
+     * @param array $headers
+     */
+    public function init(array $headers)
+    {
+        $this->headers = $headers;
+    }
+
+    /**
+     * check header
+     *
+     * @param $key
+     * @return bool
+     */
     public function has($key)
     {
         return isset($this->headers[$key]);
     }
 
+    /**
+     * set statusCode
+     *
+     * @param $code
+     */
     public function setStatus($code)
     {
         $this->statusCode = $code;
@@ -119,28 +140,64 @@ class Header
         $this->headers[$name] = $value;
     }
 
+    /**
+     * get status code
+     *
+     * @return int
+     */
     public function getStatusCode()
     {
         return $this->statusCode;
     }
 
-    public function getHeader($name, $default = null)
+    /**
+     * @param string $name
+     * @param null $default
+     * @return mixed|null
+     */
+    public function getHeader(string $name, $default = null)
     {
         return $this->headers[$name] ?? $default;
     }
 
+    /**
+     * @return array
+     */
     public function getHeaders()
     {
         return $this->headers;
     }
 
+    /**
+     * @return string
+     */
     public function getProtocol()
     {
         return 'HTTP/' . $this->protocolVersion;
     }
 
+    /**
+     * get response message
+     *
+     * @return mixed|string
+     */
     public function getMessage()
     {
         return static::$messages[$this->statusCode] ?? '';
+    }
+
+    /**
+     * remove header
+     *
+     * @param $key
+     * @return $this
+     */
+    public function remove(string $key)
+    {
+        if (isset($this->headers[$key])) {
+            unset($this->headers[$key]);
+        }
+
+        return $this;
     }
 }

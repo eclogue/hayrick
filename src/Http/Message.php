@@ -17,6 +17,9 @@ class Message implements MessageInterface
 {
     protected $protocolVersion = '1.1';
 
+    /**
+     * @var Header
+     */
     protected $header;
 
     protected $body;
@@ -134,7 +137,7 @@ class Message implements MessageInterface
     public function withHeader($name, $value)
     {
         $clone = clone $this;
-        $clone->headers[$name] = $value;
+        $clone->header->setHeader($name, $value);
 
         return $clone;
     }
@@ -149,13 +152,14 @@ class Message implements MessageInterface
      */
     public function withAddedHeader($name, $value)
     {
-        $origin = $this->getHeader($name, []);
+        $clone = clone $this;
+        $origin = $clone->getHeader($name, []);
         $origin = is_array($origin) ? $origin : [$origin];
         $value = is_array($value) ? $value : [$value];
         $value = array_merge($origin, $value);
-        $this->withHeader($name, $value);
+        $clone->withHeader($name, $value);
 
-        return $this;
+        return $clone;
     }
 
     /**
@@ -172,11 +176,12 @@ class Message implements MessageInterface
      */
     public function withoutHeader($name)
     {
-        if (isset($this->headers[$name])) {
-            unset($this->headers[$name]);
+        $clone = clone $this;
+        if ($clone->header->has($name)) {
+            $clone = $clone->header->remove($name);
         }
 
-        return $this;
+        return $clone;
     }
 
     /**
