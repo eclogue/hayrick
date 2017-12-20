@@ -52,7 +52,7 @@ class Relay
         return $relay;
     }
 
-    public static function createFromCGI(): Relay
+    public static function createFromGlobal(): Relay
     {
         $relay = new self();
         $relay->server = array_change_key_case($_SERVER, CASE_LOWER);
