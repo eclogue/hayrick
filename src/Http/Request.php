@@ -11,6 +11,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Hayrick\Environment\Relay;
+use Hayrick\Http\UploadedFile;
 
 /*
  * Http request extend swoole_http_request
@@ -60,7 +61,7 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
 
     protected $queryParams = [];
 
-    protected $payload = [];
+    protected $payload = null;
 
     protected $query;
 
@@ -79,24 +80,29 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         $this->cookie = $relay->cookie;
         $this->body = $relay->getBody();
         $this->uri = new Uri($relay->server);
-        $this->files = $relay->files; // @todo
+        $this->files = $relay->files; // @todo use UploadedFile
         $this->queryParams = $this->parseQuery($this->getUri()->getQuery());
         $this->getRequestTarget();
-        $this->bodyParsers['application/json'] = function ($body) {
+        $this->bodyParsers['application/json'] = function (Stream $body) {
+            $input = $body->getContents();
+
             return json_decode($body, true);
         };
 
-        $this->bodyParsers['application/x-www-form-urlencoded'] = function ($input) {
+        $this->bodyParsers['application/x-www-form-urlencoded'] = function (Stream $body) {
+            $input = $body->getContents();
             parse_str($input, $data);
+
             return $data;
         };
+        $this->bodyParsers['multipart/form-data'] = $this->bodyParsers['application/x-www-form-urlencoded'];
     }
 
     public function __clone()
     {
         $this->header = clone $this->header;
         $this->url = clone $this->uri;
-        $this->body = clone $this->body;
+        // $this->body = clone $this->body;
     }
 
 
@@ -181,6 +187,20 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
      */
     public function getPayload(string $key, $default = null)
     {
+        if ($this->payload === null) {
+            $contentType = $this->getHeader('content-type');
+            if ($contentType) {
+                $contentTypeParts = preg_split('/\s*[;,]\s*/', $contentType);
+                $contentType = $contentTypeParts[0];
+            }
+
+            $contentType = strtolower($contentType);
+            if (isset($this->bodyParsers[$contentType])) {
+                $parser = $this->bodyParsers[$contentType];
+                $this->payload = $parser($this->body);
+            }
+        }
+
         return $this->payload[$key] ?? $default;
     }
 
@@ -209,51 +229,51 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
     }
 
 
-    /**
-     * @param $request
-     * @return $this
-     */
-    public function __invoke($request)
-    {
-        return clone $this;
-    }
+    // /**
+    //  * @param $request
+    //  * @return $this
+    //  */
+    // public function __invoke($request)
+    // {
+    //     return clone $this;
+    // }
 
-    /**
-     * @param $name
-     * @return mixed|null
-     */
-    public function __get($name)
-    {
-        if (isset($this->incoming->$name)) {
-            return $this->incoming->$name;
-        }
+    // /**
+    //  * @param $name
+    //  * @return mixed|null
+    //  */
+    // public function __get($name)
+    // {
+    //     if (isset($this->incoming->$name)) {
+    //         return $this->incoming->$name;
+    //     }
 
-        return null;
-    }
+    //     return null;
+    // }
 
-    /**
-     * @param $name
-     * @param $value
-     * @return mixed
-     */
-    public function __set($name, $value)
-    {
-        return $this->incoming->$name = $value;
-    }
+    // /**
+    //  * @param $name
+    //  * @param $value
+    //  * @return mixed
+    //  */
+    // public function __set($name, $value)
+    // {
+    //     return $this->incoming->$name = $value;
+    // }
 
-    /**
-     * @param $func
-     * @param $params
-     * @return bool|mixed
-     */
-    public function __call($func, $params)
-    {
-        if (is_callable([$this->incoming, $func])) {
-            return call_user_func_array([$this->incoming, $func], $params);
-        }
+    // /**
+    //  * @param $func
+    //  * @param $params
+    //  * @return bool|mixed
+    //  */
+    // public function __call($func, $params)
+    // {
+    //     if (is_callable([$this->incoming, $func])) {
+    //         return call_user_func_array([$this->incoming, $func], $params);
+    //     }
 
-        return false;
-    }
+    //     return false;
+    // }
 
     // ===================== PSR-7 standard =====================
 

@@ -278,10 +278,12 @@ class Stream implements StreamInterface
             throw new RuntimeException('Stream is not readable');
         }
 
+        $this->rewind();
         $result = stream_get_contents($this->resource);
         if ($result === false) {
             throw new RuntimeException('Error reading from stream');
         }
+
         return $result;
     }
 
