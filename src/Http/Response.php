@@ -98,7 +98,14 @@ class Response extends Message implements ResponseInterface
 
 
     // ===================== PSR-7 standard ===================== //
-
+    /**
+     * set response status
+     *
+     * @param int $code
+     * @param string $reasonPhrase
+     *
+     * @return static
+     */
     public function withStatus($code, $reasonPhrase = '')
     {
         if (!is_string($reasonPhrase) && !method_exists($reasonPhrase, '__toString')) {

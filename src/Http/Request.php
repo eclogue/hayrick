@@ -68,12 +68,41 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
 
     public $incoming;
 
-    protected $bodyParser = [];
+    protected $bodyParsers = [];
 
 
-    public function __construct()
+    public function __construct(Relay $relay)
     {
         $this->header = new Header();
+        $this->method = $relay->server['request_method'] ?? 'get';
+        $this->header->init($relay->headers);
+        $this->cookie = $relay->cookie;
+        $this->body = $relay->getBody();
+        $this->uri = new Uri($relay->server);
+        $this->files = $relay->files; // @todo
+        $this->queryParams = $this->parseQuery($this->getUri()->getQuery());
+        $this->getRequestTarget();
+        $this->bodyParsers['application/json'] = function ($body) {
+            return json_decode($body, true);
+        };
+
+        $this->bodyParsers['application/x-www-form-urlencoded'] = function ($input) {
+            parse_str($input, $data);
+            return $data;
+        };
+    }
+
+    public function __clone()
+    {
+        $this->header = clone $this->header;
+        $this->url = clone $this->uri;
+        $this->body = clone $this->body;
+    }
+
+
+    public static function createRequest(Relay $relay)
+    {
+        return new static($relay);
     }
 
     public function parseQuery(string $query)
@@ -93,7 +122,7 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
      */
     public function bodyParser(string $type, callable $parser)
     {
-        $this->bodyParser[strtolower($type)] = $parser;
+        $this->bodyParsers[strtolower($type)] = $parser;
     }
 
 
