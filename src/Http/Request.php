@@ -1,7 +1,7 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: crab
+ * User: mulberry10
  * Date: 2015/4/12
  * Time: 15:23
  */
@@ -11,7 +11,6 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Hayrick\Environment\Relay;
-use Hayrick\Http\UploadedFile;
 
 /*
  * Http request extend swoole_http_request
@@ -80,13 +79,13 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         $this->cookie = $relay->cookie;
         $this->body = $relay->getBody();
         $this->uri = new Uri($relay->server);
-        $this->files = $relay->files; // @todo use UploadedFile
+        $this->files = UploadedFile::build($relay->files);
         $this->queryParams = $this->parseQuery($this->getUri()->getQuery());
         $this->getRequestTarget();
         $this->bodyParsers['application/json'] = function (Stream $body) {
             $input = $body->getContents();
 
-            return json_decode($body, true);
+            return json_decode($input, true);
         };
 
         $this->bodyParsers['application/x-www-form-urlencoded'] = function (Stream $body) {

@@ -1,6 +1,6 @@
 <?php
 /**
- * @license https://github.com/racecourse/courser/license.md
+ * @license MIT
  * @copyright Copyright (c) 2017
  * @author: bugbear
  * @date: 2017/7/4
@@ -20,12 +20,12 @@ class UploadedFile implements UploadedFileInterface
     /**
      * @var string
      */
-    protected $clientFilename;
+    protected $name;
 
     /**
      * @var string
      */
-    protected $clientMediaType;
+    protected $type;
 
     /**
      * @var int
@@ -53,6 +53,11 @@ class UploadedFile implements UploadedFileInterface
     protected $stream;
 
     /**
+     * @var string
+     */
+    protected $field = '';
+
+    /**
      * @param string|resource $streamOrFile
      * @param int $size
      * @param int $errorStatus
@@ -60,45 +65,47 @@ class UploadedFile implements UploadedFileInterface
      * @param string|null $clientMediaType
      * @throws InvalidArgumentException
      */
-    public function __construct($file, $size, $error, $field, $clientMediaType = null)
+    public function __construct($file, $filed = '', $name = null, $type = null, $size = null, $error = UPLOAD_ERR_OK)
     {
-        $error = intval($error);
-        if ($error === UPLOAD_ERR_OK) {
-            if (is_string($file)) {
-                $this->file = $file;
-            }
-            if (is_resource($file)) {
-                $this->stream = new Stream($file);
-            }
-            if (!$this->file && !$this->stream) {
-                if (!$file instanceof StreamInterface) {
-                    throw new InvalidArgumentException('Invalid stream or file provided for UploadedFile');
-                }
-                $this->stream = $file;
-            }
-        }
-
         $this->size = $size;
-        if ($error < 0 || $error > 8) {
-            throw new InvalidArgumentException(
-                'Invalid error status for UploadedFile; must be an UPLOAD_ERR_* constant'
-            );
-        }
+        $this->name = $name;
         $this->error = $error;
+        $this->file = $file;
+        $this->type = $type;
+        $this->file = $file;
+    }
 
-        if (null !== $file && !is_string($file)) {
-            throw new InvalidArgumentException(
-                'Invalid client filename provided for UploadedFile; must be null or a string'
-            );
-        }
-        $this->clientFilename = $file;
+    public static function build(array $files)
+    {
+        $instances = [];
+        foreach($files as $name => $file){
+            if(is_array($file['name'])){
+                foreach(array_keys($file['name']) as $key){
+                    $params = [
+                        $file['tmp_name'][$key],
+                        $name,
+                        $file['name'][$key],
+                        $file['type'][$key],
+                        $file['size'][$key],
+                        $file['error'][$key],
+                    ];
 
-        if (null !== $clientMediaType && !is_string($clientMediaType)) {
-            throw new InvalidArgumentException(
-                'Invalid client media type provided for UploadedFile; must be null or a string'
-            );
+                    $instances[] = new static(...$params);
+                }
+            }else{
+                $params = [
+                    $file['tmp_name'],
+                    $name,
+                    $file['name'],
+                    $file['type'],
+                    $file['size'],
+                    $file['error'],
+                ];
+                $instances[] = new static(...$params);
+            }
         }
-        $this->clientMediaType = $clientMediaType;
+
+        return $instances;
     }
 
     /**
@@ -119,7 +126,8 @@ class UploadedFile implements UploadedFileInterface
             return $this->stream;
         }
 
-        $this->stream = new Stream($this->file);
+        $this->stream = new Stream(fopen($this->file, 'r'));
+
         return $this->stream;
     }
 
@@ -169,6 +177,7 @@ class UploadedFile implements UploadedFileInterface
                 if (false === move_uploaded_file($this->file, $targetPath)) {
                     throw new RuntimeException('Error occurred while moving uploaded file');
                 }
+
                 break;
         }
 
@@ -197,22 +206,29 @@ class UploadedFile implements UploadedFileInterface
     }
 
     /**
-     * {@inheritdoc}
      *
      * @return string|null The filename sent by the client or null if none
      *     was provided.
      */
     public function getClientFilename()
     {
-        return $this->clientFilename;
+        return $this->name;
     }
 
     /**
-     * {@inheritdoc}
+     * @return null|string
      */
     public function getClientMediaType()
     {
-        return $this->clientMediaType;
+        return $this->type;
+    }
+
+    /**
+     * @return string
+     */
+    public function getField()
+    {
+        return $this->field;
     }
 
     /**
