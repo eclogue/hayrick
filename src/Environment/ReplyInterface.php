@@ -9,8 +9,9 @@
 
 namespace Hayrick\Environment;
 
+use Psr\Http\Message\ResponseInterface;
 
-interface ReplayInterface
+interface ReplyInterface
 {
-    public function end();
+    public function end(ResponseInterface $response);
 }
