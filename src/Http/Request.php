@@ -10,7 +10,7 @@ namespace Hayrick\Http;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Hayrick\Environment\Relay;
+use Hayrick\Environment\RelayAbstract;
 
 /*
  * Http request extend swoole_http_request
@@ -71,7 +71,7 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
     protected $bodyParsers = [];
 
 
-    public function __construct(Relay $relay)
+    public function __construct(RelayAbstract $relay)
     {
         $this->header = new Header();
         $this->method = $relay->server['request_method'] ?? 'get';
