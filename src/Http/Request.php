@@ -10,6 +10,7 @@ namespace Hayrick\Http;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\StreamInterface;
 use Hayrick\Environment\RelayAbstract;
 
 /*
@@ -71,16 +72,23 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
     protected $bodyParsers = [];
 
 
-    public function __construct(RelayAbstract $relay)
+    public function __construct(
+        array $server,
+        array $headers,
+        array $cookie,
+        array $files,
+        StreamInterface $stream,
+        array $query
+    )
     {
         $this->header = new Header();
-        $this->method = $relay->server['request_method'] ?? 'get';
-        $this->header->init($relay->headers);
-        $this->cookie = $relay->cookie;
-        $this->body = $relay->getBody();
-        $this->uri = new Uri($relay->server);
-        $this->files = UploadedFile::build($relay->files);
-        $this->queryParams = $this->parseQuery($this->getUri()->getQuery());
+        $this->method = $server['request_method'] ?? 'get';
+        $this->header->init($headers);
+        $this->cookie = $cookie;
+        $this->body = $stream;
+        $this->uri = new Uri($server);
+        $this->files = UploadedFile::build($files);
+        $this->queryParams = $query;
         $this->getRequestTarget();
         $this->bodyParsers['application/json'] = function (Stream $body) {
             $input = $body->getContents();
@@ -97,17 +105,20 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         $this->bodyParsers['multipart/form-data'] = $this->bodyParsers['application/x-www-form-urlencoded'];
     }
 
+
     public function __clone()
     {
         $this->header = clone $this->header;
         $this->url = clone $this->uri;
-        // $this->body = clone $this->body;
+        $this->body = clone $this->body;
     }
 
 
-    public static function createRequest(Relay $relay)
+    public static function createRequest(RelayAbstract $relay)
     {
-        return new static($relay);
+        $params = $relay->toArray();
+
+        return new static(...$params);
     }
 
     public function parseQuery(string $query)
@@ -227,52 +238,6 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         return $this->queryParams[$key] ?? $default;
     }
 
-
-    // /**
-    //  * @param $request
-    //  * @return $this
-    //  */
-    // public function __invoke($request)
-    // {
-    //     return clone $this;
-    // }
-
-    // /**
-    //  * @param $name
-    //  * @return mixed|null
-    //  */
-    // public function __get($name)
-    // {
-    //     if (isset($this->incoming->$name)) {
-    //         return $this->incoming->$name;
-    //     }
-
-    //     return null;
-    // }
-
-    // /**
-    //  * @param $name
-    //  * @param $value
-    //  * @return mixed
-    //  */
-    // public function __set($name, $value)
-    // {
-    //     return $this->incoming->$name = $value;
-    // }
-
-    // /**
-    //  * @param $func
-    //  * @param $params
-    //  * @return bool|mixed
-    //  */
-    // public function __call($func, $params)
-    // {
-    //     if (is_callable([$this->incoming, $func])) {
-    //         return call_user_func_array([$this->incoming, $func], $params);
-    //     }
-
-    //     return false;
-    // }
 
     // ===================== PSR-7 standard =====================
 

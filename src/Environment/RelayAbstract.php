@@ -24,8 +24,20 @@ abstract class RelayAbstract
 
     public $query;
 
-    public function getBody(): StreamInterface
+    public function getBody()
     {
 
+    }
+
+    public function toArray(): array
+    {
+        return [
+            $this->server,
+            $this->headers,
+            $this->cookie,
+            $this->files,
+            $this->body,
+            $this->query,
+        ];
     }
 }
