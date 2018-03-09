@@ -24,6 +24,23 @@ abstract class RelayAbstract
 
     public $query;
 
+    public function __construct(
+        array $server,
+        array $headers,
+        array $cookie,
+        array $files,
+        array $query,
+        StreamInterface $stream
+    )
+    {
+        $this->server = $server;
+        $this->headers = $headers;
+        $this->cookie = $cookie;
+        $this->files = $files;
+        $this->query = $query;
+        $this->body = $stream;
+    }
+
     public function getBody()
     {
 
