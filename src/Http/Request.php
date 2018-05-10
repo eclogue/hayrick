@@ -12,6 +12,7 @@ use Psr\Http\Message\UriInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Hayrick\Environment\RelayAbstract;
+use Riverline\MultiPartParser\Part;
 
 /*
  * Http request extend swoole_http_request
@@ -102,7 +103,6 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
 
             return $data;
         };
-        $this->bodyParsers['multipart/form-data'] = $this->bodyParsers['application/x-www-form-urlencoded'];
     }
 
 
