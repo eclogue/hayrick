@@ -79,7 +79,11 @@ class UploadedFile implements UploadedFileInterface
     {
         $instances = [];
         foreach($files as $name => $file){
-            if (is_array($file['name'])){
+            if (!is_array($file)) {
+                continue;
+            }
+
+            if (isset($file['name']) && is_array($file['name'])){
                 foreach(array_keys($file['name']) as $key){
                     $params = [
                         $file['tmp_name'][$key],
@@ -93,7 +97,7 @@ class UploadedFile implements UploadedFileInterface
                     $instances[] = new static(...$params);
                 }
             } else {
-                if (is_array($file) && !isset($file['name'])) {
+                if (!isset($file['name'])) {
                     $instances = static::build($file);
                 } else {
                     $params = [
