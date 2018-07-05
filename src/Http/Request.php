@@ -93,7 +93,6 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
         $this->getRequestTarget();
         $this->bodyParsers['application/json'] = function (Stream $body) {
             $input = $body->getContents();
-
             return json_decode($input, true);
         };
 
@@ -198,16 +197,19 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
     public function getPayload(string $key, $default = null)
     {
         if ($this->payload === null) {
-            $contentType = $this->getHeader('content-type');
+            $contentType = $this->getHeader('Content-Type', '');
+            if (!$contentType) {
+                $contentType = $this->getHeader('Content-type');
+            }
+
             if ($contentType) {
                 $contentTypeParts = preg_split('/\s*[;,]\s*/', $contentType);
                 $contentType = $contentTypeParts[0];
-            }
-
-            $contentType = strtolower($contentType);
-            if (isset($this->bodyParsers[$contentType])) {
-                $parser = $this->bodyParsers[$contentType];
-                $this->payload = $parser($this->body);
+                $contentType = strtolower($contentType);
+                if (isset($this->bodyParsers[$contentType])) {
+                    $parser = $this->bodyParsers[$contentType];
+                    $this->payload = $parser($this->body);
+                }
             }
         }
 
@@ -453,7 +455,7 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
             return $this->payload;
         }
 
-        $type = strtolower($this->getHeader('content-type'));
+        $type = strtolower($this->getHeader('Content-type'));
         $body = (string) $this->getBody();
         $methods = [
             'put',

@@ -116,7 +116,9 @@ class Message implements MessageInterface
     public function getHeaderLine($name, $default = [])
     {
         $header = $this->getHeader($name, $default);
-        return implode(',', $header);
+
+//        return implode(',', $header);
+        return $header;
     }
 
     /**
