@@ -83,7 +83,7 @@ class Request extends Message implements RequestInterface, ServerRequestInterfac
     )
     {
         $this->header = new Header();
-        $this->method = $server['request_method'] ?? 'get';
+        $this->method = $server['REQUEST_METHOD'] ?? 'get';
         $this->header->init($headers);
         $this->cookie = $cookie;
         $this->body = $stream;
