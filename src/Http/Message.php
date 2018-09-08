@@ -113,7 +113,7 @@ class Message implements MessageInterface
      *    concatenated together using a comma. If the header does not appear in
      *    the message, this method MUST return an empty string.
      */
-    public function getHeaderLine($name, $default = [])
+    public function getHeaderLine($name, $default = null)
     {
         $header = $this->getHeader($name, $default);
 
